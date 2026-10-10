@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════
+#        🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   GɪᴛHᴜʙ : github.com/tanmayjn2015/tanmay-music-bot
+#   Dᴇᴠʟᴏᴘᴇʀ : @tanmayjn2015 | Telegram
+# ═══════════════════════════════════════════════════════════
+
+from pyrogram import filters
+from pyrogram.types import Message
+
+from TANMAYMUSIC import app
+from TANMAYMUSIC.core.call import VISHAL
+from TANMAYMUSIC.utils.database import is_music_playing, music_on
+from TANMAYMUSIC.utils.decorators import AdminRightsCheck
+from TANMAYMUSIC.utils.colored_buttons import (
+    buttons_to_inline_markup,
+    smart_send_message as send_message_colored,
+    smart_edit_message_text as edit_message_text_colored,
+    edit_reply_markup_colored,
+)
+from TANMAYMUSIC.utils.inline import close_markup
+from config import BANNED_USERS
+
+
+@app.on_message(filters.command(["resume", "cresume"]) & filters.group & ~BANNED_USERS)
+@AdminRightsCheck
+async def resume_com(cli, message: Message, _, chat_id):
+    if await is_music_playing(chat_id):
+        return await send_message_colored(chat_id=message.chat.id, text=_["admin_3"])
+    await music_on(chat_id)
+    await VISHAL.resume_stream(chat_id)
+    await send_message_colored(chat_id=message.chat.id, 
+        text=_["admin_4"].format(message.from_user.mention),
+        reply_markup=close_markup(_)
+    )
+
+# ═══════════════════════════════════════════════════════════
+#         🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   github.com/tanmayjn2015/tanmay-music-bot
+# ═══════════════════════════════════════════════════════════

@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════
+#        🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   GɪᴛHᴜʙ : github.com/tanmayjn2015/tanmay-music-bot
+#   Dᴇᴠʟᴏᴘᴇʀ : @tanmayjn2015 | Telegram
+# ═══════════════════════════════════════════════════════════
+
+from pyrogram.types import (
+    InlineQueryResultPhoto,
+)
+from py_yt import VideosSearch
+
+from TANMAYMUSIC.utils.colored_buttons import styled_button, buttons_to_inline_markup
+from TANMAYMUSIC.utils.inlinequery import answer
+from config import BANNED_USERS
+from TANMAYMUSIC import app
+
+
+@app.on_inline_query(~BANNED_USERS)
+async def inline_query_handler(client, query):
+    text = query.query.strip().lower()
+    answers = []
+    if text.strip() == "":
+        try:
+            await client.answer_inline_query(query.id, results=answer, cache_time=10)
+        except:
+            return
+    else:
+        a = VideosSearch(text, limit=20)
+        result = (await a.next()).get("result")
+        for x in range(15):
+            title = (result[x]["title"]).title()
+            duration = result[x]["duration"]
+            views = result[x]["viewCount"]["short"]
+            thumbnail = result[x]["thumbnails"][0]["url"].split("?")[0]
+            channellink = result[x]["channel"]["link"]
+            channel = result[x]["channel"]["name"]
+            link = result[x]["link"]
+            published = result[x]["publishedTime"]
+            description = f"{views} | {duration} ᴍɪɴᴜᴛᴇs | {channel}  | {published}"
+            buttons = buttons_to_inline_markup([
+                [
+                    styled_button(text="ʏᴏᴜᴛᴜʙᴇ 🎄", url=link, style="primary"),
+                ],
+            ])
+            searched_text = f"""
+❄ <b>ᴛɪᴛʟᴇ :</b> <a href={link}>{title}</a>
+
+⏳ <b>ᴅᴜʀᴀᴛɪᴏɴ :</b> {duration} ᴍɪɴᴜᴛᴇs
+👀 <b>ᴠɪᴇᴡs :</b> <code>{views}</code>
+🎥 <b>ᴄʜᴀɴɴᴇʟ :</b> <a href={channellink}>{channel}</a>
+⏰ <b>ᴘᴜʙʟɪsʜᴇᴅ ᴏɴ :</b> {published}
+
+
+<u><b>➻ ɪɴʟɪɴᴇ sᴇᴀʀᴄʜ ᴍᴏᴅᴇ ʙʏ {app.name}</b></u>"""
+            answers.append(
+                InlineQueryResultPhoto(
+                    photo_url=thumbnail,
+                    title=title,
+                    thumb_url=thumbnail,
+                    description=description,
+                    caption=searched_text,
+                    reply_markup=buttons,
+                )
+            )
+        try:
+            return await client.answer_inline_query(query.id, results=answers)
+        except:
+            return
+
+# ═══════════════════════════════════════════════════════════
+#         🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   github.com/tanmayjn2015/tanmay-music-bot
+# ═══════════════════════════════════════════════════════════

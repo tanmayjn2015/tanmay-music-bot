@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════
+#        🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   GɪᴛHᴜʙ : github.com/tanmayjn2015/tanmay-music-bot
+#   Dᴇᴠʟᴏᴘᴇʀ : @tanmayjn2015 | Telegram
+# ═══════════════════════════════════════════════════════════
+
+from typing import Union
+
+class AssistantErr(Exception):
+    def __init__(self, errr: str):
+        super().__init__(errr)
+
+IGNORED_ERROR_KEYWORDS = [
+    "Nᴏ ᴀᴄᴛɪᴠᴇ ᴠɪᴅᴇᴏᴄʜᴀᴛ ғᴏᴜɴᴅ",
+    "لم يتم العثور على مكالمة فيديو نشطة",
+    "Активный видеочат не найден",
+    "Aktif video sohbet bulunamadı",
+    "कोई सक्रिय वीडियोचैट नहीं मिला।",
+    "No active group call",
+    "not found",
+    "GROUPCALL_INVALID",
+    "CHAT_NOT_MODIFIED",
+    "MESSAGE_NOT_MODIFIED",
+    "Query is too old",
+    "Peer id invalid",
+    "USER_NOT_PARTICIPANT",
+    "CHANNEL_PRIVATE",
+]
+
+IGNORED_EXCEPTION_CLASSES = (
+    
+)
+
+def is_ignored_error(err: Union[Exception, BaseException]) -> bool:
+    if isinstance(err, IGNORED_EXCEPTION_CLASSES):
+        return True
+
+    err_str = str(err).lower()
+    return any(keyword.lower() in err_str for keyword in IGNORED_ERROR_KEYWORDS)
+
+# ═══════════════════════════════════════════════════════════
+#         🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   github.com/tanmayjn2015/tanmay-music-bot
+# ═══════════════════════════════════════════════════════════

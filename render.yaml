@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: tanmay-music-bot
+    env: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PORT
+        value: "3000"
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: STRING_SESSION
+        sync: false
+      - key: STRING_SESSION2
+        sync: false
+      - key: STRING_SESSION3
+        sync: false
+      - key: STRING_SESSION4
+        sync: false
+      - key: STRING_SESSION5
+        sync: false
+      - key: MONGO_DB_URI
+        sync: false
+      - key: OWNER_ID
+        sync: false
+      - key: LOGGER_ID
+        sync: false
+      - key: PRIMARY_API_URL
+        value: https://api.shrutibots.site
+      - key: TANMAY_API_KEY
+        sync: false
+      # Keep-alive: set this to your service's public URL (e.g.
+      # https://tanmay-music-bot.onrender.com) so the free instance does not
+      # spin down after 15 idle minutes. Leave blank to disable.
+      - key: KEEPALIVE_URL
+        sync: false
+      - key: KEEPALIVE_INTERVAL
+        value: "600"

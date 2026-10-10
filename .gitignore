@@ -1,0 +1,28 @@
+# Secrets — kabhi push mat karna
+.env
+*.env
+
+# Virtualenv — kabhi push mat karna (1.2GB+, build fail kar dega)
+.venv/
+venv/
+env/
+virtualenv/
+
+# Runtime junk
+downloads/
+cache/
+__pycache__/
+*.pyc
+*.log
+log.txt
+unknown_errors.txt
+*.session
+cookies.txt
+
+# runtime (not for repo)
+cache/
+cookies.txt
+bot.log
+.env
+downloads/
+*.log

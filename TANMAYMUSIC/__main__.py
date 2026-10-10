@@ -1,0 +1,331 @@
+# ═══════════════════════════════════════════════════════════
+#        🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   GɪᴛHᴜʙ : github.com/tanmayjn2015/tanmay-music-bot
+#   Dᴇᴠʟᴏᴘᴇʀ : @tanmayjn2015 | Telegram
+# ═══════════════════════════════════════════════════════════
+
+import asyncio
+import gc
+import importlib
+import logging
+import os
+import sys
+import time
+from threading import Thread
+
+
+def _env_value(key, default=None):
+    return os.environ[key] if key in os.environ else default
+
+import config
+from TANMAYMUSIC import LOGGER, app, userbot
+from TANMAYMUSIC.core.call import VISHAL
+from TANMAYMUSIC.misc import sudo
+from TANMAYMUSIC.plugins import ALL_MODULES
+from TANMAYMUSIC.utils.database import get_banned_users, get_gbanned
+from TANMAYMUSIC.utils.cookie_handler import fetch_and_store_cookies
+from config import BANNED_USERS
+from pyrogram import idle
+from pytgcalls.exceptions import NoActiveGroupCall
+
+# ----------------------🔹 Render / Web Flask Dashboard 🔹----------------------
+def keep_alive():
+    try:
+        from flask import Flask, jsonify
+        from pymongo import MongoClient
+    except ImportError:
+        return
+
+    def run_flask():
+        fapp = Flask(__name__)
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+        try:
+            _sync_mongo = MongoClient(
+                config.MONGO_DB_URI,
+                serverSelectionTimeoutMS=2000,
+                connectTimeoutMS=2000,
+                maxPoolSize=2,
+                minPoolSize=0,
+                maxIdleTimeMS=20000,
+            )
+            _sync_db = _sync_mongo.Vishal
+        except Exception:
+            _sync_db = None
+
+        _start_time = time.time()
+
+        @fapp.route('/')
+        def home():
+            try:
+                uptime_sec = int(time.time() - _start_time)
+                hours, remainder = divmod(uptime_sec, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                uptime_str = f"{hours}h {minutes}m {seconds}s"
+
+                total_users = total_chats = total_banned = total_sudoers = 0
+                if _sync_db is not None:
+                    try:
+                        total_users = _sync_db.tgusersdb.count_documents({})
+                        total_chats = _sync_db.chats.count_documents({})
+                        total_banned = _sync_db.blockedusers.count_documents({})
+                        sudo_data = _sync_db.sudoers.find_one({"sudo": "sudo"})
+                        total_sudoers = len(sudo_data.get("sudoers", [])) if sudo_data else 0
+                    except Exception as db_error:
+                        LOGGER("TANMAYMUSIC").warning(f"DB stats error: {db_error}")
+
+                bot_name = getattr(config, "BOT_NAME", "TANMAY Music Bot")
+                owner_username = getattr(config, "OWNER_USERNAME", "tanmayjn2015")
+                bot_username = getattr(config, "BOT_USERNAME", "tanmaymusicBot")
+
+                return f"""<!DOCTYPE html>
+<html><head><title>TANMAY Music Bot</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#fff;padding:20px}}
+.c{{max-width:800px;margin:0 auto}}
+.h{{text-align:center;padding:30px 0}}
+.h h1{{font-size:2.2em;background:linear-gradient(90deg,#7c6cff,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+.sb{{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);padding:8px 20px;border-radius:30px;margin-top:15px}}
+.dot{{width:10px;height:10px;background:#00ff88;border-radius:50%;animation:p 2s infinite}}
+@keyframes p{{0%,100%{{opacity:1}}50%{{opacity:.3}}}}
+.sg{{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px;margin:30px 0}}
+.sc{{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:25px 20px;text-align:center;transition:transform .2s}}
+.sc:hover{{transform:translateY(-3px)}}
+.sc .i{{font-size:1.8em}}.sc .v{{font-size:1.6em;font-weight:bold;margin:8px 0 4px;color:#00ff88}}.sc .l{{color:#888;font-size:.85em}}
+.ib{{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px;margin-top:20px}}
+.ir{{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}}
+.ir:last-child{{border:none}}.ir .k{{color:#888}}.ir .vl{{color:#ddd;font-weight:500}}
+.f{{text-align:center;margin-top:30px;color:#555;font-size:.8em}}.f a{{color:#7c6cff;text-decoration:none}}
+</style></head><body><div class="c">
+<div class="h"><h1>🎵 TANMAY Music Bot</h1><div class="sb"><span class="dot"></span><span style="color:#00ff88;font-size:.9em">Online & Running</span></div></div>
+<div class="sg">
+<div class="sc"><div class="i">👥</div><div class="v">{total_users}</div><div class="l">Total Users</div></div>
+<div class="sc"><div class="i">💬</div><div class="v">{total_chats}</div><div class="l">Total Chats</div></div>
+<div class="sc"><div class="i">🚫</div><div class="v">{total_banned}</div><div class="l">Banned Users</div></div>
+<div class="sc"><div class="i">👑</div><div class="v">{total_sudoers}</div><div class="l">Sudo Users</div></div>
+</div>
+<div class="ib">
+<div class="ir"><span class="k">⏱️ Uptime</span><span class="vl">{uptime_str}</span></div>
+<div class="ir"><span class="k">🤖 Bot Name</span><span class="vl">{bot_name}</span></div>
+<div class="ir"><span class="k">👤 Owner</span><span class="vl">@{owner_username}</span></div>
+<div class="ir"><span class="k">🌍 Languages</span><span class="vl">15 Supported</span></div>
+</div>
+<div class="f"><p>Auto-refreshes every 30s</p><p style="margin-top:8px"><a href="https://t.me/{bot_username}">Open Bot</a> • <a href="https://t.me/{owner_username}">TANMAY</a></p></div>
+</div></body></html>"""
+            except Exception as e:
+                logging.getLogger("TANMAYMUSIC").error(f"Flask home error: {e}")
+                return f"Error: {str(e)}", 500
+
+        @fapp.route('/health')
+        def health():
+            return "OK", 200
+
+        @fapp.route('/api/stats')
+        def api_stats():
+            if _sync_db is None:
+                return jsonify({"error": "DB not connected", "status": "error"}), 200
+            try:
+                return jsonify({
+                    "users": _sync_db.tgusersdb.count_documents({}),
+                    "chats": _sync_db.chats.count_documents({}),
+                    "banned": _sync_db.blockedusers.count_documents({}),
+                    "uptime": int(time.time() - _start_time),
+                    "status": "running"
+                })
+            except Exception as e:
+                logging.getLogger("TANMAYMUSIC").error(f"Flask API stats error: {e}")
+                return jsonify({"error": str(e), "status": "error"}), 200
+
+        port = int(_env_value("PORT", 3000))
+        fapp.run(host="0.0.0.0", port=port)
+
+    t = Thread(target=run_flask)
+    t.daemon = True
+    t.start()
+
+# Start Flask Web server immediately for Render port binding
+keep_alive()
+
+
+async def _gc_loop() -> None:
+    """Periodic garbage collection loop to keep RAM footprint low and clean memory leaks."""
+    while True:
+        await asyncio.sleep(600)  # Every 10 mins
+        gc.collect()
+
+
+async def _cookie_refresh_loop() -> None:
+    """Periodically re-fetch YouTube cookies.
+
+    Cookies are fetched only once at startup; YouTube invalidates them over
+    time, after which every download silently fails (assistant joins the VC
+    but no song ever plays). Refreshing keeps the bot healthy on long uptime.
+    """
+    hours = float(_env_value("COOKIE_REFRESH_HOURS", "12"))
+    while True:
+        await asyncio.sleep(hours * 3600)
+        try:
+            await fetch_and_store_cookies()
+            LOGGER("TANMAYMUSIC").info("ʏᴏᴜᴛᴜʙᴇ ᴄᴏᴏᴋɪᴇs ʀᴇꜰʀᴇꜱʜᴇᴅ ✔")
+        except Exception as e:
+            LOGGER("TANMAYMUSIC").warning(f"⚠️ ᴄᴏᴏᴋɪᴇ ʀᴇꜰʀᴇꜱʜ ꜰᴀɪʟᴇᴅ: {e}")
+
+
+async def _auto_restart_loop(hours: float) -> None:
+    """Optional watchdog: restart the bot process every N hours.
+
+    Long-running bots degrade over time (stale pytgcalls calls, memory
+    growth, dropped sessions). A periodic restart is the standard fix.
+    Enable by setting AUTO_RESTART_HOURS in the environment (e.g. 24).
+    """
+    import sys
+
+    while True:
+        await asyncio.sleep(hours * 3600)
+        LOGGER("TANMAYMUSIC").info(f"🔄 ᴀᴜᴛᴏ-ʀᴇꜱᴛᴀʀᴛ ᴀꜰᴛᴇʀ {hours}h ᴏꜰ ᴜᴘᴛɪᴍᴇ...")
+        try:
+            os.execv(sys.executable, [sys.executable, "-m", "TANMAYMUSIC"])
+        except Exception as e:
+            LOGGER("TANMAYMUSIC").error(f"❌ ᴀᴜᴛᴏ-ʀᴇꜱᴛᴀʀᴛ ꜰᴀɪʟᴇᴅ: {e}")
+            return
+
+
+async def _keepalive_ping_loop() -> None:
+    """Render / Koyeb free-tier keep-alive.
+
+    A free web service is spun down after 15 minutes without any inbound
+    traffic, which takes the bot offline. This loop pings our own /health
+    endpoint so inbound requests keep arriving.
+
+    Enable by setting KEEPALIVE_URL to this service's public URL, e.g.
+    https://tanmay-music-bot.onrender.com
+    Interval comes from KEEPALIVE_INTERVAL (seconds, default 600 = 10 min,
+    kept safely below Render's 15-minute idle window).
+    """
+    url = (_env_value("KEEPALIVE_URL", "") or "").strip().rstrip("/")
+    if not url:
+        return
+
+    try:
+        interval = max(60, int(_env_value("KEEPALIVE_INTERVAL", "600")))
+    except (TypeError, ValueError):
+        interval = 600
+
+    target = f"{url}/health"
+    LOGGER("TANMAYMUSIC").info(
+        f"🩺 ᴋᴇᴇᴘ-ᴀʟɪᴠᴇ ᴇɴᴀʙʟᴇᴅ: ᴘɪɴɢɪɴɢ {target} ᴇᴠᴇʀʏ {interval}s"
+    )
+
+    import aiohttp
+
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as session:
+                async with session.get(target) as resp:
+                    if resp.status != 200:
+                        LOGGER("TANMAYMUSIC").warning(
+                            f"⚠️ ᴋᴇᴇᴘ-ᴀʟɪᴠᴇ ᴘɪɴɢ ʀᴇᴛᴜʀɴᴇᴅ HTTP {resp.status}"
+                        )
+        except Exception as e:
+            # Never fatal: a failed ping must not take the bot down.
+            LOGGER("TANMAYMUSIC").warning(f"⚠️ ᴋᴇᴇᴘ-ᴀʟɪᴠᴇ ᴘɪɴɢ ꜰᴀɪʟᴇᴅ: {e}")
+
+
+async def init():
+    if (
+        not config.STRING1
+        and not config.STRING2
+        and not config.STRING3
+        and not config.STRING4
+        and not config.STRING5
+    ):
+        LOGGER(__name__).error("ᴀssɪsᴛᴀɴᴛ sᴇssɪᴏɴ ɴᴏᴛ ғɪʟʟᴇᴅ, ᴘʟᴇᴀsᴇ ғɪʟʟ ᴀ ᴘʏʀᴏɢʀᴀᴍ sᴇssɪᴏɴ...")
+        exit()
+
+    # ✅ Try to fetch cookies at startup
+    try:
+        await fetch_and_store_cookies()
+        LOGGER("TANMAYMUSIC").info("ʏᴏᴜᴛᴜʙᴇ ᴄᴏᴏᴋɪᴇs ʟᴏᴀᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ ✅")
+    except Exception as e:
+        LOGGER("TANMAYMUSIC").warning(f"⚠️ ᴄᴏᴏᴋɪᴇ ᴇʀʀᴏʀ: {e}")
+
+    await sudo()
+
+    try:
+        users = await get_gbanned()
+        for user_id in users:
+            BANNED_USERS.add(user_id)
+        users = await get_banned_users()
+        for user_id in users:
+            BANNED_USERS.add(user_id)
+    except:
+        pass
+
+    await app.start()
+    for all_module in ALL_MODULES:
+        try:
+            importlib.import_module("TANMAYMUSIC.plugins" + all_module)
+        except Exception as e:
+            # One broken plugin (e.g. missing env key) must never kill the bot.
+            LOGGER("TANMAYMUSIC.plugins").error(
+                f"❌ Failed to load module {all_module}: {e}\nBot continues without it."
+            )
+
+    LOGGER("TANMAYMUSIC.plugins").info("ᴍᴏᴅᴜʟᴇs ʟᴏᴀᴅᴇᴅ...")
+
+    await userbot.start()
+
+    # ▶️ VC Logger: resume VC join/leave notifications for groups that enabled
+    # it (added in this upgrade pack). Runs only after the assistant is up.
+    try:
+        from TANMAYMUSIC.plugins.tools.vclogger import load_vc_logger_status
+
+        asyncio.create_task(load_vc_logger_status())
+    except Exception as e:
+        LOGGER("TANMAYMUSIC").warning(f"⚠️ ᴠᴄ ʟᴏɢɢᴇʀ ɪɴɪᴛ ғᴀɪʟᴇᴅ: {e}")
+
+    await VISHAL.start()
+
+    try:
+        await VISHAL.stream_call("https://files.catbox.moe/euj0oc.mp4")
+    except NoActiveGroupCall:
+        LOGGER("TANMAYMUSIC").error(
+            "ᴘʟᴇᴀsᴇ ᴛᴜʀɴ ᴏɴ ᴛʜᴇ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ᴏғ ʏᴏᴜʀ ʟᴏɢ ɢʀᴏᴜᴘ/ᴄʜᴀɴɴᴇʟ.\n\nʙᴏᴛ sᴛᴏᴘᴘᴇᴅ..."
+        )
+        exit()
+    except:
+        pass
+
+    await VISHAL.decorators()
+
+    # Long-uptime health: periodic GC, refresh YouTube cookies periodically
+    asyncio.create_task(_gc_loop())
+    asyncio.create_task(_cookie_refresh_loop())
+    # Render/Koyeb free tier: keep the service from spinning down on idle.
+    # No-op unless KEEPALIVE_URL is set.
+    asyncio.create_task(_keepalive_ping_loop())
+    auto_restart_hours = float(_env_value("AUTO_RESTART_HOURS", "0"))
+    if auto_restart_hours > 0:
+        asyncio.create_task(_auto_restart_loop(auto_restart_hours))
+        LOGGER("TANMAYMUSIC").info(f"🔄 ᴀᴜᴛᴏ-ʀᴇꜱᴛᴀʀᴛ ᴇɴᴀʙʟᴇᴅ: ᴇᴠᴇʀʏ {auto_restart_hours}h")
+
+    LOGGER("TANMAYMUSIC").info("✅ TANMAY Music Bot Started Successfully!")
+    await idle()
+    await app.stop()
+    await userbot.stop()
+    LOGGER("TANMAYMUSIC").info("sᴛᴏᴘᴘɪɴɢ ᴍᴜsɪᴄ ʙᴏᴛ ...")
+
+
+if __name__ == "__main__":
+    asyncio.get_event_loop().run_until_complete(init())
+
+# ═══════════════════════════════════════════════════════════
+#         🌺 𝗧𝗔𝗡𝗠𝗔𝗬 𝗠𝗨𝗦𝗜𝗖 🌺
+#   github.com/tanmayjn2015/tanmay-music-bot
+# ═══════════════════════════════════════════════════════════
